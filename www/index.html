@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0D12" id="themeColor">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>openboard</title>
+<style>
+:root{--bg:#0B0D12;--side:#0F1218;--surface:#151922;--surface2:#1C2130;--user:#1A1F2E;--code:#0A0C11;--border:#252B3A;
+--text:#E7E9EF;--soft:#C3C8D6;--muted:#8A92A6;--accent:#7A6BFF;--accent-h:#9387FF;--danger:#F0616D;--warn:#F2B84B;--ok:#3DD68C;
+--codefg:#D6DAE5;--icode:#C9BEFF;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
+[data-theme=light]{--bg:#fff;--side:#F5F6F9;--surface:#F1F3F7;--surface2:#E7EAF1;--user:#EEF0F6;--code:#F2F4F8;--border:#D9DEE8;
+--text:#14171F;--soft:#394050;--muted:#6A7286;--codefg:#1F2430;--icode:#5B49D6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+input,textarea,select{font:inherit;color:var(--text)}
+#app{display:flex;height:100dvh;overflow:hidden;position:relative}
+/* боковая панель */
+#drawer{position:fixed;z-index:30;top:0;bottom:0;left:0;width:min(84vw,320px);background:var(--side);border-right:1px solid var(--border);
+display:flex;flex-direction:column;transform:translateX(-102%);transition:transform .22s ease;padding-top:var(--sat);padding-bottom:var(--sab)}
+#drawer.open{transform:none}
+#scrim{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s}
+#scrim.on{opacity:1;pointer-events:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 18px 14px;font-weight:700;font-size:20px}
+.brand img{width:28px;height:28px;border-radius:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:11px 18px;font-weight:600}
+.btn.primary{background:var(--accent);color:#fff}.btn.primary:active{background:var(--accent-h)}
+.btn.ghost{border:1px solid var(--border);color:var(--text)}.btn.danger{background:var(--danger);color:#fff}
+.btn.block{display:flex;width:100%}
+#newChat{margin:0 14px}
+.label{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);padding:18px 22px 6px}
+#chatList{flex:1;overflow:auto;padding:0 8px}
+.crow{display:flex;align-items:center;border-radius:10px}.crow.sel{background:var(--surface2)}
+.crow .t{flex:1;padding:11px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--soft)}
+.crow.sel .t{color:var(--text)}.crow .x{color:var(--muted);padding:10px 14px}
+.dfoot{border-top:1px solid var(--border);padding:10px 10px 14px}
+.meter{padding:6px 12px 10px;font-size:12px;color:var(--muted)}
+.meter .bar{height:6px;border-radius:3px;background:var(--border);margin-top:6px;overflow:hidden}.meter .bar i{display:block;height:100%;background:var(--accent)}
+.drow{display:block;width:100%;text-align:left;padding:12px;border-radius:10px;color:var(--soft)}.drow:active{background:var(--surface2)}
+/* основная область */
+main{flex:1;min-width:0;display:flex;flex-direction:column;padding-top:var(--sat)}
+.top{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border)}
+.icon{width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--soft)}.icon:active{background:var(--surface2)}
+#title{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--soft);max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.on{background:var(--surface2);border-color:var(--accent);color:var(--text)}
+#messages{flex:1;overflow:auto;padding:14px 14px 6px;-webkit-overflow-scrolling:touch}
+.msg{margin:0 0 16px;display:flex}
+.msg.user{justify-content:flex-end}
+.bubble{max-width:86%;background:var(--user);border:1px solid var(--border);border-radius:18px;padding:10px 14px;white-space:pre-wrap;word-break:break-word}
+.bubble .af{display:block;font-size:12px;color:var(--muted);white-space:normal;margin-top:6px}
+.msg.ai{gap:10px;align-items:flex-start}
+.msg.ai>img{width:28px;height:28px;border-radius:8px;margin-top:2px;flex:none}
+.ai .body{min-width:0;flex:1;word-break:break-word;max-width:760px}
+.body p{margin:0 0 .5em}.body h3,.body h4,.body h5{margin:.8em 0 .3em}.body ul,.body ol{margin:.2em 0 .6em;padding-left:1.3em}
+.body a{color:var(--accent)}.body .sp{height:.5em}
+.body code{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--surface2);color:var(--icode);padding:1px 6px;border-radius:6px}
+.body pre{margin:.5em 0;background:var(--code);border-radius:12px;overflow:hidden}
+.body pre code{display:block;background:none;color:var(--codefg);padding:10px 14px;overflow-x:auto;white-space:pre;font-size:12.5px}
+.codehead{display:flex;justify-content:space-between;align-items:center;padding:6px 14px;font:700 11px ui-monospace,Menlo,Consolas,monospace;color:var(--muted)}
+.copy{font:600 12px inherit;color:var(--muted);padding:2px 0}
+.cursor{color:var(--accent)}
+.foot{font-size:12px;color:var(--muted);display:flex;gap:14px;margin-top:4px}
+.foot button{color:var(--muted);font-size:12px}
+details.tool{margin:-6px 0 14px 38px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:13px;max-width:760px}
+details.tool summary{padding:9px 12px;cursor:pointer;list-style:none;display:flex;gap:8px;align-items:center}
+details.tool summary::-webkit-details-marker{display:none}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warn);flex:none}.dot.ok{background:var(--ok)}.dot.error{background:var(--danger)}
+details.tool .brief{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+details.tool pre{margin:0;padding:10px 12px;border-top:1px solid var(--border);background:var(--code);color:var(--codefg);white-space:pre-wrap;word-break:break-word;font:12px ui-monospace,Menlo,Consolas,monospace;max-height:260px;overflow:auto}
+.err{color:var(--danger)}.note{color:var(--warn);font-size:13px;margin:0 0 14px 38px}
+.welcome{text-align:center;padding:9vh 10px 0}.welcome img{width:96px;height:96px;border-radius:24px}
+.welcome h1{font-size:26px;margin:18px 0 6px}.welcome p{color:var(--muted);margin:0 0 22px;font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chips button{border:1px solid var(--border);background:var(--surface);color:var(--soft);border-radius:12px;padding:9px 14px;font-size:14px}
+/* поле ввода */
+#attRow{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px}
+#attRow:empty{display:none}#attRow .att{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px 6px 4px 10px;font-size:13px;color:var(--soft);margin-top:6px}
+.att b{font-weight:400;color:var(--muted);padding:2px 6px}
+.composer{margin:8px 10px 0;display:flex;align-items:flex-end;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:6px}
+.composer:focus-within{border-color:var(--accent)}
+#input{flex:1;min-width:0;border:0;outline:0;background:none;resize:none;max-height:160px;padding:9px 6px;line-height:1.4}
+#input::placeholder{color:var(--muted)}
+#send{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+#send:disabled{background:var(--surface2);color:var(--muted)}
+#hint{text-align:center;font-size:11px;color:var(--muted);padding:8px 12px calc(8px + var(--sab))}
+/* шторки */
+#sheetScrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center}
+#sheetScrim.on{display:flex}
+.sheet{width:100%;max-width:560px;max-height:88dvh;overflow:auto;background:var(--surface);border-radius:22px 22px 0 0;padding:8px 18px calc(18px + var(--sab));animation:up .2s ease}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--border);margin:6px auto 10px}
+.sheet h3{margin:4px 0 12px;font-size:18px}
+.srow{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:14px 4px;border-bottom:1px solid var(--border)}
+.srow:last-child{border-bottom:0}.srow .r{color:var(--muted)}
+.sw{width:46px;height:28px;border-radius:14px;background:var(--border);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw.on{background:var(--accent)}.sw.on::after{transform:translateX(18px)}
+.f{margin-top:14px}.f label{display:block;font-size:12px;font-weight:700;color:var(--soft);margin-bottom:6px}
+.f input,.f select,.f textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;outline:0}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--accent)}
+.f .two{display:flex;gap:8px}.f .hint{font-size:12px;color:var(--muted);margin-top:6px}
+.status{font-size:13px;margin-top:8px;color:var(--muted)}.status.ok{color:var(--ok)}.status.bad{color:var(--danger)}
+.seg{display:flex;background:var(--surface2);border-radius:12px;padding:3px}.seg button{flex:1;padding:9px;border-radius:10px;font-weight:600;color:var(--muted)}.seg button.on{background:var(--accent);color:#fff}
+.dots{display:flex;gap:12px;margin-top:14px}.dots button{width:36px;height:36px;border-radius:50%;border:3px solid transparent}.dots button.on{border-color:var(--text)}
+.mrow{display:block;width:100%;text-align:left;padding:11px 4px;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.mrow.sel{color:var(--accent);font-weight:700}.mrow small{color:var(--muted)}
+.utable{width:100%;border-collapse:collapse;font-size:13px}.utable td,.utable th{padding:8px 4px;border-bottom:1px solid var(--border);text-align:right}.utable td:first-child,.utable th:first-child{text-align:left;word-break:break-all}
+#toast{position:fixed;left:50%;bottom:calc(90px + var(--sab));transform:translateX(-50%);z-index:80;background:var(--surface2);border:1px solid var(--border);padding:10px 16px;border-radius:12px;font-size:14px;max-width:88vw;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+@media(min-width:900px){#drawer{position:static;transform:none;flex:none}#scrim{display:none}#menuBtn{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="drawer">
+    <div class="brand"><img src="icon-192.png" alt="">openboard</div>
+    <button class="btn ghost" id="newChat">+&nbsp; Новый чат</button>
+    <div class="label">ЧАТЫ</div>
+    <div id="chatList"></div>
+    <div class="dfoot">
+      <div class="meter" id="meter"></div>
+      <button class="drow" id="usageBtn">Расход</button>
+      <button class="drow" id="settingsBtn">Настройки</button>
+    </div>
+  </aside>
+  <div id="scrim"></div>
+  <main>
+    <div class="top">
+      <button class="icon" id="menuBtn" aria-label="Меню"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div id="title">openboard</div>
+      <button class="chip" id="modelChip">модель</button>
+    </div>
+    <div id="messages"></div>
+    <div id="attRow"></div>
+    <div class="composer">
+      <button class="icon" id="plusBtn" aria-label="Добавить"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <textarea id="input" rows="1" placeholder="Напишите сообщение…"></textarea>
+      <button id="send" aria-label="Отправить"></button>
+    </div>
+    <div id="hint"></div>
+  </main>
+</div>
+<div id="sheetScrim"><div class="sheet" id="sheet"><div class="grab"></div><h3 id="sheetTitle"></h3><div id="sheetBody"></div></div></div>
+<div id="toast"></div>
+<input type="file" id="filePick" multiple hidden>
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "appId": "app.openboard.mobile",
+  "appName": "openboard",
+  "webDir": "www",
+  "server": { "androidScheme": "https", "cleartext": true },
+  "ios": { "contentInset": "always" }
+}
